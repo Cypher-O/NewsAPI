@@ -36,6 +36,7 @@ try
 
     builder.Services.AddScoped<INewsRepository, NewsRepository>();
     builder.Services.AddScoped<INewsService, NewsService>();
+    builder.Services.AddScoped<IUserService, UserService>();
 
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -68,9 +69,9 @@ try
     }
 
     app.UseHttpsRedirection();
+    app.UseAuthentication();
     app.UseAuthorization();
     app.MapControllers();
-    app.UseAuthentication();
     app.UseMiddleware<ExceptionMiddleware>();
 
     app.Run();
