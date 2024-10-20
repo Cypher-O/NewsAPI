@@ -1,0 +1,12 @@
+bin/
+obj/
+*.suo
+*.user
+*.userprefs
+*.vs/
+packages/
+*.log
+*.tmp
+*.env
+TestResults/
+publish/
