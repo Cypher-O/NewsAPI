@@ -3,6 +3,8 @@ using NewsAPI.Models;
 using NewsAPI.Repositories;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Caching.Memory;
+using NewsAPI.DTOs;
+using AutoMapper;
 
 namespace NewsAPI.Services
 {
@@ -11,60 +13,66 @@ namespace NewsAPI.Services
         private readonly INewsRepository _newsRepository;
         private readonly ILogger<NewsService> _logger;
         private readonly IMemoryCache _cache;
+        private readonly IMapper _mapper;
 
-        public NewsService(INewsRepository newsRepository, ILogger<NewsService> logger, IMemoryCache cache)
+        public NewsService(INewsRepository newsRepository, ILogger<NewsService> logger, IMemoryCache cache, IMapper mapper)
         {
             _newsRepository = newsRepository;
             _logger = logger;
             _cache = cache;
+            _mapper = mapper;
         }
 
-        public async Task<NewsArticle> GetArticleByIdAsync(int id)
+        public async Task<NewsArticleDto> GetArticleByIdAsync(int id)
         {
             // _logger.LogInformation("Getting article with id: {ArticleId}", id);
             // return await _newsRepository.GetByIdAsync(id);
             string cacheKey = $"article-{id}";
-            if (!_cache.TryGetValue(cacheKey, out NewsArticle article))
+            if (!_cache.TryGetValue(cacheKey, out NewsArticleDto articleDto))
             {
                 _logger.LogInformation("Cache miss for article id: {ArticleId}", id);
-                article = await _newsRepository.GetByIdAsync(id);
+                var article = await _newsRepository.GetByIdAsync(id);
+                articleDto = _mapper.Map<NewsArticleDto>(article);
                 var cacheEntryOptions = new MemoryCacheEntryOptions()
                     .SetSlidingExpiration(TimeSpan.FromMinutes(5));
-                _cache.Set(cacheKey, article, cacheEntryOptions);
+                _cache.Set(cacheKey, articleDto, cacheEntryOptions);
             }
             else
             {
                 _logger.LogInformation("Cache hit for article id: {ArticleId}", id);
             }
-            return article;
+            return articleDto;
         }
 
-        public async Task<NewsResponse> GetArticlesAsync(int page, int pageSize)
+        public async Task<NewsResponseDto> GetArticlesAsync(int page, int pageSize)
         {
             // _logger.LogInformation("Getting articles. Page: {Page}, PageSize: {PageSize}", page, pageSize);
             // return await _newsRepository.GetAllAsync(page, pageSize);
             string cacheKey = $"articles-{page}-{pageSize}";
-            if (!_cache.TryGetValue(cacheKey, out NewsResponse response))
+            if (!_cache.TryGetValue(cacheKey, out NewsResponseDto responseDto))
             {
                 _logger.LogInformation("Cache miss for articles page: {Page}", page);
-                response = await _newsRepository.GetAllAsync(page, pageSize);
+                var response = await _newsRepository.GetAllAsync(page, pageSize);
+                responseDto = _mapper.Map<NewsResponseDto>(response);
                 var cacheEntryOptions = new MemoryCacheEntryOptions()
                     .SetSlidingExpiration(TimeSpan.FromMinutes(5));
-                _cache.Set(cacheKey, response, cacheEntryOptions);
+                _cache.Set(cacheKey, responseDto, cacheEntryOptions);
             }
             else
             {
                 _logger.LogInformation("Cache hit for articles page: {Page}", page);
             }
-            return response;
+            return responseDto;
         }
 
-        public async Task<NewsArticle> CreateArticleAsync(NewsArticle article)
+        public async Task<NewsArticleDto> CreateArticleAsync(CreateNewsArticleDto articleDto)
         {
             // article.PublishedDate = DateTime.UtcNow;
             // _logger.LogInformation("Creating article with title: {ArticleTitle}", article.Title);
             // return await _newsRepository.CreateAsync(article);
+             var article = _mapper.Map<NewsArticle>(articleDto);
             article.PublishedDate = DateTime.UtcNow;
+
             _logger.LogInformation("Creating article with title: {ArticleTitle}", article.Title);
             var createdArticle = await _newsRepository.CreateAsync(article);
 
@@ -76,10 +84,10 @@ namespace NewsAPI.Services
             // Clear the cache for articles to ensure fresh data for the next fetch
             _cache.Remove($"articles-1-10"); // Adjust page and pageSize as needed
 
-            return createdArticle;
+            return _mapper.Map<NewsArticleDto>(createdArticle);
         }
 
-        public async Task<NewsArticle> UpdateArticleAsync(int id, NewsArticle article)
+        public async Task<NewsArticleDto> UpdateArticleAsync(int id, UpdateNewsArticleDto articleDto)
         {
             _logger.LogInformation("Updating article with id: {ArticleId}", id);
             var existingArticle = await _newsRepository.GetByIdAsync(id);
@@ -89,11 +97,7 @@ namespace NewsAPI.Services
                 return null;
             }
 
-            existingArticle.Title = article.Title;
-            existingArticle.Content = article.Content;
-            existingArticle.Author = article.Author;
-            existingArticle.Category = article.Category;
-
+            _mapper.Map(articleDto, existingArticle);
             var updatedArticle = await _newsRepository.UpdateAsync(existingArticle);
 
             // Update the cache
@@ -105,8 +109,9 @@ namespace NewsAPI.Services
             _cache.Remove($"articles-1-10"); // Adjust page and pageSize as needed
 
             _logger.LogInformation("Article with id: {ArticleId} updated successfully.", id);
-            return updatedArticle;
             
+            return _mapper.Map<NewsArticleDto>(updatedArticle);
+
             // _logger.LogInformation("Updating article with id: {ArticleId}", id);
             // var existingArticle = await _newsRepository.GetByIdAsync(id);
             // if (existingArticle == null)

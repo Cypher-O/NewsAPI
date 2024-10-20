@@ -7,6 +7,8 @@ using Serilog;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using NewsAPI.Middleware;
+using NewsAPI.Mappings;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -25,6 +27,7 @@ try
     builder.Services.AddSwaggerGen();
 
     builder.Services.AddMemoryCache();
+    builder.Services.AddAutoMapper(typeof(MappingProfile));
 
     builder.Services.AddDbContext<NewsDbContext>(options =>
         options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -56,6 +59,7 @@ try
     app.UseAuthorization();
     app.MapControllers();
     app.UseAuthentication();
+    app.UseMiddleware<ExceptionMiddleware>();
 
     app.Run();
 }
