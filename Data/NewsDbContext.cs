@@ -9,5 +9,7 @@ namespace NewsAPI.Data
         public NewsDbContext(DbContextOptions<NewsDbContext> options) : base(options) { }
 
         public DbSet<NewsArticle> NewsArticles { get; set; }
+
+        public DbSet<User> Users { get; set; }
     }
 }

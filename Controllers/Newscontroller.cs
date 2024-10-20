@@ -1,10 +1,12 @@
 // Controllers/NewsController.cs
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NewsAPI.Models;
 using NewsAPI.Services;
 
 namespace NewsAPI.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class NewsController : ControllerBase
@@ -34,6 +36,7 @@ namespace NewsAPI.Controllers
             return Ok(response);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<ActionResult<NewsArticle>> CreateArticle([FromBody] NewsArticle article)
         {
@@ -41,6 +44,7 @@ namespace NewsAPI.Controllers
             return CreatedAtAction(nameof(GetArticle), new { id = createdArticle.Id }, createdArticle);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
         public async Task<ActionResult<NewsArticle>> UpdateArticle(int id, [FromBody] NewsArticle article)
         {
@@ -52,6 +56,7 @@ namespace NewsAPI.Controllers
             return Ok(updatedArticle);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteArticle(int id)
         {
