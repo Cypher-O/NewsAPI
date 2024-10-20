@@ -30,7 +30,9 @@ try
     builder.Services.AddAutoMapper(typeof(MappingProfile));
 
     builder.Services.AddDbContext<NewsDbContext>(options =>
-        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    // builder.Services.AddDbContext<NewsDbContext>(options =>
+    //     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
     builder.Services.AddScoped<INewsRepository, NewsRepository>();
     builder.Services.AddScoped<INewsService, NewsService>();
@@ -49,6 +51,16 @@ try
 
     var app = builder.Build();
 
+    // Seed the database
+    using (var scope = app.Services.CreateScope())
+    {
+        var services = scope.ServiceProvider;
+        var context = services.GetRequiredService<NewsDbContext>();
+        var seeder = new DatabaseSeeder(context);
+        await seeder.SeedAsync();
+    }
+
+
     if (app.Environment.IsDevelopment())
     {
         app.UseSwagger();
@@ -66,6 +78,7 @@ try
 catch (Exception ex)
 {
     Log.Fatal(ex, "Application start-up failed");
+    throw;
 }
 finally
 {
